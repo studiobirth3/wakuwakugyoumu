@@ -50,8 +50,7 @@ body{font-family:'Hiragino Sans','Meiryo',sans-serif;background:var(--bg);color:
 .category-title{font-size:13px;font-weight:700;color:#fff;}
 
 /* Task item */
-.task-item{display:flex;align-items:center;gap:9px;padding:0.6rem 0.75rem;background:#fff;border-radius:10px;margin-bottom:3px;cursor:pointer;border:1.5px solid var(--navy-light);}
-.task-item:active{background:var(--navy-light);}
+.task-item{display:flex;align-items:center;gap:9px;padding:0.6rem 0.75rem;background:#fff;border-radius:10px;margin-bottom:3px;border:1.5px solid var(--navy-light);}
 .task-item.task-done{background:var(--yellow-light);border-color:#F5C800;}
 .check-circle{width:26px;height:26px;border-radius:50%;border:2px solid #ccc;flex-shrink:0;display:flex;align-items:center;justify-content:center;transition:all .15s;font-size:14px;}
 .check-circle.done{background:var(--navy);border-color:var(--navy);color:#fff;}
@@ -77,6 +76,7 @@ body{font-family:'Hiragino Sans','Meiryo',sans-serif;background:var(--bg);color:
 .badge-weekly{background:var(--navy);color:#fff;}
 .badge-biweekly{background:var(--navy-mid);color:#fff;}
 .badge-monthly{background:var(--red);color:#fff;}
+.badge-bimonthly{background:#7c3aed;color:#fff;}
 .badge-asneeded{background:#e5e7eb;color:#374151;}
 .badge-ok{background:#dcfce7;color:#166534;}
 .badge-warn{background:#fef3c7;color:#92400e;}
@@ -124,12 +124,27 @@ body{font-family:'Hiragino Sans','Meiryo',sans-serif;background:var(--bg);color:
 .qr-label{color:#fff;font-size:13px;margin-top:1.25rem;text-align:center;}
 .av-sm{border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-weight:700;flex-shrink:0;}
 .section-card{background:#fff;border-radius:14px;padding:1rem;margin-bottom:10px;border:1.5px solid var(--navy-light);}
-@media print{.header,.tab-bar,.bottom-bar,#qr-overlay,.btn-navy,.back-btn{display:none!important;}.screen{display:block!important;}.qr-print-item{page-break-inside:avoid;margin-bottom:1rem;}}
+.task-item.task-overdue{border-color:var(--red);background:#fff5f5;}
+.task-item.task-overdue .task-label{color:#991b1b;font-weight:700;}
+.alert-banner{background:#fee2e2;border:2px solid var(--red);border-radius:10px;padding:0.6rem 0.85rem;margin-bottom:10px;display:flex;align-items:center;gap:8px;}
+.alert-count{background:var(--red);color:#fff;border-radius:50%;width:22px;height:22px;display:inline-flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0;}
+.assign-badge{font-size:10px;font-weight:700;padding:2px 6px;border-radius:10px;background:#e0f2fe;color:#075985;flex-shrink:0;}
+.assign-badge.mine{background:#dcfce7;color:#166534;}
+@media print{
+  .no-print{display:none!important;}
+  .print-only{display:block!important;}
+  body{max-width:none;font-size:12px;}
+  .monthly-report-table{width:100%;border-collapse:collapse;font-size:11px;}
+  .monthly-report-table th,.monthly-report-table td{border:1px solid #ccc;padding:4px 6px;}
+  .monthly-report-table th{background:#f0f0f0;}
+}
+.print-only{display:none;}
+
 .toast{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:var(--navy);color:#fff;padding:0.85rem 1.5rem;border-radius:14px;font-size:14px;font-weight:700;z-index:300;text-align:center;max-width:280px;border:3px solid var(--yellow);}
 </style>
 <script>
 (function(){
-  const VER='20260406141201';
+  const VER='20260406220000';
   const stored=localStorage.getItem('app_version');
   if(stored&&stored!==VER){
     localStorage.setItem('app_version',VER);
@@ -185,9 +200,13 @@ body{font-family:'Hiragino Sans','Meiryo',sans-serif;background:var(--bg);color:
     <button class="back-btn" onclick="goLogin()">← 戻る</button>
     <div id="check-avatar-hdr"></div>
     <span class="header-title" id="check-name-hdr" style="margin-left:6px;"></span>
-    <button onclick="openScanner()" style="background:var(--yellow);border:none;border-radius:8px;padding:6px 11px;font-size:12px;font-weight:700;cursor:pointer;color:var(--navy);">📷 QR</button>
+    <button onclick="openScanner()" style="background:var(--yellow);border:none;border-radius:8px;padding:6px 14px;font-size:13px;font-weight:700;cursor:pointer;color:var(--navy);display:flex;align-items:center;gap:4px;">📷 QRスキャン</button>
   </div>
   <div style="padding:0.85rem 1rem;background:var(--navy);" id="check-prog-area"></div>
+  <div style="background:#fff8e1;border-bottom:2px solid var(--yellow);padding:0.5rem 1rem;display:flex;align-items:center;gap:8px;">
+    <span style="font-size:15px;">📷</span>
+    <span style="font-size:12px;color:#92400e;font-weight:700;">各作業場所のQRコードをスキャンして完了にしてください</span>
+  </div>
   <div class="content" id="check-task-area" style="padding-bottom:0;"></div>
   <div class="spacer-bottom"></div>
   <div class="bottom-bar">
@@ -210,6 +229,7 @@ body{font-family:'Hiragino Sans','Meiryo',sans-serif;background:var(--bg);color:
     <div class="tab" onclick="setViewerTab('log')">実施ログ</div>
     <div class="tab" onclick="setViewerTab('cal')">カレンダー</div>
     <div class="tab" onclick="setViewerTab('ranking')">月間集計</div>
+    <div class="tab" onclick="setViewerTab('export')">エクスポート</div>
   </div>
   <div class="content" id="viewer-content"></div>
 </div>
@@ -249,6 +269,7 @@ body{font-family:'Hiragino Sans','Meiryo',sans-serif;background:var(--bg);color:
   </div>
   <div class="tab-bar" style="border-bottom:none;">
     <div class="tab active" onclick="setAdminTab('staff')">スタッフ</div>
+    <div class="tab" onclick="setAdminTab('assign')">割り当て</div>
     <div class="tab" onclick="setAdminTab('cutoff')">締め時刻</div>
     <div class="tab" onclick="setAdminTab('csv')">CSV</div>
     <div class="tab" onclick="setAdminTab('qr')">QRコード</div>
@@ -369,7 +390,8 @@ let S={
   records:{},
   settings:{
     adminPin:'1234',
-    cutoffTimes:{'0':'14:00','1':'14:00','2':'14:00','3':'14:00','4':'14:00','5':'14:00','6':'12:00'}
+    cutoffTimes:{'0':'14:00','1':'14:00','2':'14:00','3':'14:00','4':'14:00','5':'14:00','6':'12:00'},
+    taskAssignments:{}
   }
 };
 
@@ -391,7 +413,11 @@ function load(){
     if(t)S.tasks=JSON.parse(t);
     if(st)S.staff=JSON.parse(st);
     if(r)S.records=JSON.parse(r);
-    if(se)S.settings=JSON.parse(se);
+    if(se){
+      const parsed=JSON.parse(se);
+      S.settings={...S.settings,...parsed};
+      if(!S.settings.taskAssignments)S.settings.taskAssignments={};
+    }
   }catch(e){}
 }
 
@@ -421,8 +447,8 @@ function avHtml(n,sz=32){
   const c=staffColor(n);
   return `<div class="av-sm" style="width:${sz}px;height:${sz}px;background:${c}22;color:${c};font-size:${Math.round(sz*.35)}px;">${staffInit(n)}</div>`;
 }
-function freqKey(f){return{毎日:'daily',週1回:'weekly','2週間に1回':'biweekly',月1回:'monthly',都度:'asneeded'}[f]||'asneeded';}
-function freqDays(f){return{週1回:7,'2週間に1回':14,月1回:30}[f]||999;}
+function freqKey(f){return{毎日:'daily',週1回:'weekly','2週間に1回':'biweekly',月1回:'monthly','月2回(1日・15日)':'bimonthly',都度:'asneeded'}[f]||'asneeded';}
+function freqDays(f){return{週1回:7,'2週間に1回':14,月1回:30,'月2回(1日・15日)':15}[f]||999;}
 
 // =========== RECORD ACCESS ===========
 function getLastComp(taskId){
@@ -447,6 +473,15 @@ function getTaskStatus(task){
   if(task.frequency==='都度')return{status:'asneeded',last};
   if(task.frequency==='毎日'){
     return{status:isDoneToday(task.id,bd)?'ok':'warn',last};
+  }
+  if(task.frequency==='月2回(1日・15日)'){
+    const day=parseInt(bd.slice(8));
+    const ym=bd.slice(0,7);
+    const windowStart=day>=15?`${ym}-15`:`${ym}-01`;
+    if(last.date&&last.date>=windowStart)return{status:'ok',last};
+    const diffFromStart=daysDiff(windowStart,bd);
+    if(diffFromStart<=1)return{status:'warn',last};
+    return{status:'overdue',last};
   }
   if(!last.date)return{status:'overdue',last};
   const diff=daysDiff(last.date,bd);
@@ -477,6 +512,20 @@ function showAdminLogin(){
   S.pinBuf='';renderPinDisp();showScreen('admin-login');
 }
 
+// =========== OVERDUE HELPERS ===========
+function getOverdueTasks(staffName){
+  const bd=getBizDate();
+  const sr=S.records[bd]?.[staffName]||{};
+  return S.tasks.filter(task=>{
+    // skip tasks not assigned to this staff (if assignment exists)
+    const asgn=S.settings.taskAssignments[task.id];
+    if(asgn&&asgn!==staffName)return false;
+    if(sr[task.id]?.completed)return false;
+    const {status}=getTaskStatus(task);
+    return status==='overdue'||(task.frequency==='毎日'&&status==='warn');
+  });
+}
+
 // =========== LOGIN ===========
 function renderLogin(){
   const now=new Date();
@@ -488,24 +537,33 @@ function renderLogin(){
   bd.textContent=real===biz?`業務日: ${biz.replace(/-/g,'/')}`:`業務日: ${biz.replace(/-/g,'/')}（前日分として記録）`;
 
   const grid=document.getElementById('staff-grid');
-  grid.innerHTML=S.staff.map((name,i)=>{
-    const bd2=getBizDate();
-    const sr=S.records[bd2]?.[name]||{};
-    const pts=S.tasks.reduce((s,t)=>sr[t.id]?.completed?s+t.points:s,0);
-    const totalDaily=S.tasks.filter(t=>t.frequency==='毎日').reduce((s,t)=>s+t.points,0);
-    const pct=totalDaily>0?Math.min(100,Math.round(pts/totalDaily*100)):0;
-    const c=COLORS[i%COLORS.length];
-    return`<div class="staff-card" onclick="selectStaff('${name}')">
-      <div class="avatar" style="background:${c}22;color:${c};">${staffInit(name)}</div>
-      <div style="font-size:15px;font-weight:700;margin-bottom:4px;">${name}</div>
-      <div style="font-size:11px;color:#888;margin-bottom:5px;">本日: ${pts.toFixed(1)}pt</div>
-      <div style="height:5px;background:#eee;border-radius:3px;overflow:hidden;">
-        <div style="height:100%;width:${pct}%;background:var(--yellow);border-radius:3px;"></div>
-      </div>
-    </div>`;
+  window._loginStaff=S.staff;
+  grid.innerHTML=S.staff.map(function(name,i){
+    var bd2=getBizDate();
+    var sr=S.records[bd2]&&S.records[bd2][name]?S.records[bd2][name]:{};
+    var pts=S.tasks.reduce(function(s,t){return sr[t.id]&&sr[t.id].completed?s+t.points:s;},0);
+    var totalDaily=S.tasks.filter(function(t){return t.frequency==='毎日';}).reduce(function(s,t){return s+t.points;},0);
+    var pct=totalDaily>0?Math.min(100,Math.round(pts/totalDaily*100)):0;
+    var c=COLORS[i%COLORS.length];
+    var overdue=getOverdueTasks(name).length;
+    var badgeDot=overdue>0
+      ?'<div style="position:absolute;top:-4px;right:-4px;background:var(--red);color:#fff;border-radius:50%;width:18px;height:18px;font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;border:2px solid #fff;">'+overdue+'</div>'
+      :'';
+    var overdueRow=overdue>0
+      ?'<div style="font-size:10px;color:var(--red);font-weight:700;margin-bottom:4px;">&#9888; 未完了 '+overdue+'件</div>'
+      :'';
+    return '<div class="staff-card" onclick="selectStaff(window._loginStaff['+i+'])">'
+      +'<div style="position:relative;display:inline-block;">'
+      +'<div class="avatar" style="background:'+c+'22;color:'+c+';">'+staffInit(name)+'</div>'
+      +badgeDot+'</div>'
+      +'<div style="font-size:15px;font-weight:700;margin-bottom:4px;">'+name+'</div>'
+      +'<div style="font-size:11px;color:#888;margin-bottom:5px;">本日: '+pts.toFixed(1)+'pt</div>'
+      +overdueRow
+      +'<div style="height:5px;background:#eee;border-radius:3px;overflow:hidden;">'
+      +'<div style="height:100%;width:'+pct+'%;background:var(--yellow);border-radius:3px;"></div>'
+      +'</div></div>';
   }).join('');
 }
-
 function selectStaff(name){
   S.currentStaff=name;S.openCats={};renderCheck();showScreen('check');
 }
@@ -549,34 +607,63 @@ function renderCheck(){
   const cats=[...new Set(S.tasks.map(t=>t.category))];
   const area=document.getElementById('check-task-area');
   if(!area)return;
-  area.innerHTML=cats.map(cat=>{
-    const catTasks=S.tasks.filter(t=>t.category===cat);
-    const open=S.openCats[cat]!==false;
-    const doneN=catTasks.filter(t=>sr[t.id]?.completed).length;
-    const catPts=catTasks.reduce((s,t)=>sr[t.id]?.completed?s+t.points:s,0);
-    const allDone=doneN===catTasks.length&&catTasks.length>0;
-    return`<div style="margin-bottom:8px;">
-      <div class="category-header" onclick="toggleCat('${cat}')" style="${allDone?'background:var(--navy-mid);':''}">
-        <div style="display:flex;align-items:center;gap:8px;">
-          <span class="category-title">${cat}</span>
-          <span style="background:rgba(255,255,255,.2);color:#fff;font-size:10px;font-weight:700;padding:2px 7px;border-radius:20px;">${doneN}/${catTasks.length}</span>
-          ${allDone?'<span style="background:var(--yellow);color:var(--navy);font-size:10px;font-weight:700;padding:2px 7px;border-radius:20px;">完了</span>':''}
-        </div>
-        <div style="display:flex;align-items:center;gap:6px;">
-          <span style="font-size:12px;color:rgba(255,255,255,.8);">${catPts.toFixed(1)}pt</span>
-          <span style="font-size:11px;color:rgba(255,255,255,.6);">${open?'▲':'▼'}</span>
-        </div>
-      </div>
-      ${open?catTasks.map(task=>{
-        const done=sr[task.id]?.completed;
-        return`<div class="task-item ${done?'task-done':''}" onclick="toggleTask('${task.id}')">
-          <div class="check-circle ${done?'done':''}">${done?'✓':''}</div>
-          <span class="task-label ${done?'done-text':''}">${task.name}</span>
-          <span class="badge badge-${freqKey(task.frequency)}" style="flex-shrink:0;margin-right:3px;">${task.frequency}</span>
-          <span class="task-pts">${task.points}pt</span>
-        </div>`;
-      }).join(''):''}
-    </div>`;
+
+  // Overdue banner
+  const myOverdue=getOverdueTasks(name);
+  const overdueBanner=myOverdue.length>0
+    ?`<div class="alert-banner no-print">
+        <div class="alert-count">${myOverdue.length}</div>
+        <div style="font-size:12px;color:#991b1b;font-weight:700;">未完了・期限超過の業務があります</div>
+      </div>`
+    :'';
+
+  // Store cats globally for onclick handlers (avoids quoting issues)
+  window._checkCats = cats;
+  area.innerHTML=overdueBanner+cats.map(function(cat,ci){
+    var catTasks=S.tasks.filter(function(t){
+      if(t.category!==cat)return false;
+      var asgn=S.settings.taskAssignments[t.id];
+      return !asgn||asgn===name;
+    });
+    if(!catTasks.length)return'';
+    var open=S.openCats[cat]!==false;
+    var doneN=catTasks.filter(function(t){return sr[t.id]&&sr[t.id].completed;}).length;
+    var catPts=catTasks.reduce(function(s,t){return sr[t.id]&&sr[t.id].completed?s+t.points:s;},0);
+    var allDone=doneN===catTasks.length&&catTasks.length>0;
+    var doneBadge=allDone?'<span style="background:var(--yellow);color:var(--navy);font-size:10px;font-weight:700;padding:2px 7px;border-radius:20px;">完了</span>':'';
+    var catStyle=allDone?'background:var(--navy-mid);':'';
+    var taskRows='';
+    if(open){
+      taskRows=catTasks.map(function(task){
+        var done=sr[task.id]&&sr[task.id].completed;
+        var st=getTaskStatus(task);
+        var status=st.status;
+        var isOverdue=!done&&(status==='overdue'||(task.frequency==='毎日'&&status==='warn'));
+        var asgn=S.settings.taskAssignments[task.id];
+        var itemCls=done?'task-done':isOverdue?'task-overdue':'';
+        var circleCls=done?'done':'';
+        var icon=done?'✓':isOverdue?'⚠':'📷';
+        var labelCls=done?'done-text':'';
+        var asgnHtml=asgn?'<span class="assign-badge mine">👤'+asgn+'</span>':'';
+        return '<div class="task-item '+itemCls+'">'
+          +'<div class="check-circle '+circleCls+'">'+icon+'</div>'
+          +'<span class="task-label '+labelCls+'">'+task.name+'</span>'
+          +asgnHtml
+          +'<span class="badge badge-'+freqKey(task.frequency)+'" style="flex-shrink:0;margin-right:3px;">'+task.frequency+'</span>'
+          +'<span class="task-pts">'+task.points+'pt</span>'
+          +'</div>';
+      }).join('');
+    }
+    var hdr='<div class="category-header" onclick="toggleCat(window._checkCats['+ci+'])" style="'+catStyle+'">'
+      +'<div style="display:flex;align-items:center;gap:8px;">'
+      +'<span class="category-title">'+cat+'</span>'
+      +'<span style="background:rgba(255,255,255,.2);color:#fff;font-size:10px;font-weight:700;padding:2px 7px;border-radius:20px;">'+doneN+'/'+catTasks.length+'</span>'
+      +doneBadge+'</div>'
+      +'<div style="display:flex;align-items:center;gap:6px;">'
+      +'<span style="font-size:12px;color:rgba(255,255,255,.8);">'+catPts.toFixed(1)+'pt</span>'
+      +'<span style="font-size:11px;color:rgba(255,255,255,.6);">'+(open?'▲':'▼')+'</span>'
+      +'</div></div>';
+    return '<div style="margin-bottom:8px;">'+hdr+taskRows+'</div>';
   }).join('');
 }
 
@@ -646,7 +733,7 @@ function showToast(msg){
 function setViewerTab(tab){
   S.viewerTab=tab;
   document.querySelectorAll('#screen-viewer .tab').forEach((t,i)=>{
-    t.classList.toggle('active',['freq','log','cal','ranking'][i]===tab);
+    t.classList.toggle('active',['freq','log','cal','ranking','export'][i]===tab);
   });
   renderViewer();
 }
@@ -657,35 +744,41 @@ function renderViewer(){
   if(S.viewerTab==='freq')el.innerHTML=buildFreqView();
   else if(S.viewerTab==='log')el.innerHTML=buildLogView();
   else if(S.viewerTab==='ranking')el.innerHTML=buildRankingView();
+  else if(S.viewerTab==='export')el.innerHTML=buildExportView();
   else{el.innerHTML=buildCalView();attachCalClick();}
 }
 
 function buildFreqView(){
-  const freqOrder=['毎日','週1回','2週間に1回','月1回','都度'];
-  const statusLabel={ok:'完了',warn:'要実施',overdue:'期限超過',asneeded:'随時'};
-  const dotCls={ok:'dot-green',warn:'dot-yellow',overdue:'dot-red',asneeded:'dot-gray'};
-  const badgeCls={ok:'badge-ok',warn:'badge-warn',overdue:'badge-overdue',asneeded:'badge-asneeded'};
+  var freqOrder=['毎日','月2回(1日・15日)','週1回','2週間に1回','月1回','都度'];
+  var statusLabel={ok:'完了',warn:'要実施',overdue:'期限超過',asneeded:'随時'};
+  var dotCls={ok:'dot-green',warn:'dot-yellow',overdue:'dot-red',asneeded:'dot-gray'};
+  var badgeCls={ok:'badge-ok',warn:'badge-warn',overdue:'badge-overdue',asneeded:'badge-asneeded'};
 
-  return freqOrder.map(freq=>{
-    const tasks=S.tasks.filter(t=>t.frequency===freq);
+  return freqOrder.map(function(freq){
+    var tasks=S.tasks.filter(function(t){return t.frequency===freq;});
     if(!tasks.length)return'';
-    return`<div style="margin-bottom:1.25rem;">
-      <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
-        <div style="background:var(--navy);color:#fff;font-size:11px;font-weight:700;padding:3px 10px;border-radius:20px;">${freq}</div>
-      </div>
-      ${tasks.map(task=>{
-        const{status,last}=getTaskStatus(task);
-        const meta=last.date?`${last.staff} / ${fmtDateJP(last.date)}`:'未実施';
-        return`<div class="freq-row">
-          <div class="status-dot ${dotCls[status]}"></div>
-          <span class="freq-name">${task.name}</span>
-          <div style="text-align:right;flex-shrink:0;">
-            <div><span class="badge ${badgeCls[status]}">${statusLabel[status]}</span></div>
-            <div style="font-size:10px;color:#aaa;margin-top:2px;">${meta}</div>
-          </div>
-        </div>`;
-      }).join('')}
-    </div>`;
+    var taskRows=tasks.map(function(task){
+      var res=getTaskStatus(task);
+      var status=res.status; var last=res.last;
+      var meta=last.date?(last.staff+' / '+fmtDateJP(last.date)):'未実施';
+      var asgn=S.settings.taskAssignments[task.id];
+      var rowStyle=status==='overdue'?'border-color:var(--red);background:#fff5f5;':'';
+      var asgnHtml=asgn?'<span class="assign-badge">👤'+asgn+'</span>':'';
+      return '<div class="freq-row" style="'+rowStyle+'">'
+        +'<div class="status-dot '+dotCls[status]+'"></div>'
+        +'<span class="freq-name">'+task.name+'</span>'
+        +'<div style="text-align:right;flex-shrink:0;">'
+        +'<div style="display:flex;align-items:center;gap:4px;justify-content:flex-end;flex-wrap:wrap;">'
+        +asgnHtml
+        +'<span class="badge '+badgeCls[status]+'">'+statusLabel[status]+'</span>'
+        +'</div>'
+        +'<div style="font-size:10px;color:#aaa;margin-top:2px;">'+meta+'</div>'
+        +'</div></div>';
+    }).join('');
+    return '<div style="margin-bottom:1.25rem;">'
+      +'<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">'
+      +'<div style="background:var(--navy);color:#fff;font-size:11px;font-weight:700;padding:3px 10px;border-radius:20px;">'+freq+'</div>'
+      +'</div>'+taskRows+'</div>';
   }).join('');
 }
 
@@ -828,7 +921,7 @@ function renderPinDisp(){
 function setAdminTab(tab){
   S.adminTab=tab;
   document.querySelectorAll('#screen-admin .tab').forEach((t,i)=>{
-    t.classList.toggle('active',['staff','cutoff','csv','qr'][i]===tab);
+    t.classList.toggle('active',['staff','assign','cutoff','csv','qr'][i]===tab);
   });
   renderAdmin();
 }
@@ -836,6 +929,7 @@ function setAdminTab(tab){
 function renderAdmin(){
   const el=document.getElementById('admin-content');if(!el)return;
   if(S.adminTab==='staff')el.innerHTML=buildAdminStaff();
+  else if(S.adminTab==='assign')el.innerHTML=buildAdminAssign();
   else if(S.adminTab==='cutoff')el.innerHTML=buildAdminCutoff();
   else if(S.adminTab==='csv')el.innerHTML=buildAdminCsv();
   else{el.innerHTML=buildAdminQr();genQrCodes();}
@@ -865,18 +959,52 @@ function buildAdminStaff(){
   </div>`;
 }
 
+function buildAdminAssign(){
+  var cats=[...new Set(S.tasks.map(function(t){return t.category;}))];
+  var opts=['既でも）「'].concat(S.staff);
+  var catHtml=cats.map(function(cat){
+    var taskHtml=S.tasks.filter(function(t){return t.category===cat;}).map(function(task){
+      var cur=S.settings.taskAssignments[task.id]||'';
+      var selOpts=opts.map(function(o){
+        var val=o==='既でも）「'?'':o;
+        var sel=cur===val?' selected':'';
+        return '<option value="'+val+'"'+sel+'>'+o+'</option>';
+      }).join('');
+      return '<div style="display:flex;align-items:center;gap:8px;padding:0.55rem 0.75rem;background:#fff;border-radius:10px;margin-bottom:3px;border:1.5px solid var(--navy-light);">'
+        +'<span style="flex:1;font-size:12px;line-height:1.4;">'+task.name+'</span>'
+        +'<select data-taskid="'+task.id+'" onchange="setAssign(this.dataset.taskid,this.value)"'
+        +' style="padding:4px 6px;border:1.5px solid var(--navy-light);border-radius:8px;font-size:12px;font-family:inherit;background:#fff;color:var(--navy);cursor:pointer;">'
+        +selOpts+'</select></div>';
+    }).join('');
+    return '<div style="font-size:11px;color:var(--navy-mid);font-weight:700;margin:1rem 0 6px;letter-spacing:.05em;">'+cat+'</div>'+taskHtml;
+  }).join('');
+  return '<div class="admin-section">'
+    +'<div class="admin-section-title">担当者固定業務の割り当て</div>'
+    +'<p style="font-size:12px;color:#888;margin-bottom:1rem;line-height:1.6;">特定のスタッフのみに割り当てると、他のスタッフのチェック画面には表示されなくなります。<br>「誰でも」にすると全員に表示されます。</p>'
+    +catHtml+'</div>';
+}
+function setAssign(taskId,staffName){
+  if(!S.settings.taskAssignments)S.settings.taskAssignments={};
+  if(staffName==='')delete S.settings.taskAssignments[taskId];
+  else S.settings.taskAssignments[taskId]=staffName;
+  save();
+}
+
 function buildAdminCutoff(){
-  const days=['日','月','火','水','木','金','土'];
-  const colors=['#dc2626','#555','#555','#555','#555','#555','#1e40af'];
-  return`<div class="admin-section">
-    <div class="admin-section-title">曜日別 締め時刻設定</div>
-    <p style="font-size:12px;color:#888;margin-bottom:1rem;line-height:1.6;">設定時刻より前の入力は前日分として記録されます。<br>空欄にするとその曜日は繰り越しなし（当日扱い）。</p>
-    ${days.map((d,i)=>`<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid #f0f0ec;">
-      <span class="dow-label" style="color:${colors[i]};font-weight:600;">${d}曜日</span>
-      <input type="time" class="time-input" value="${S.settings.cutoffTimes[i.toString()]||''}" onchange="updateCutoff(${i},this.value)">
-      <span style="font-size:11px;color:#888;">までは前日分</span>
-    </div>`).join('')}
-  </div>`;
+  var days=['日','月','火','水','木','金','土'];
+  var colors=['#dc2626','#555','#555','#555','#555','#555','#1e40af'];
+  var rows=days.map(function(d,i){
+    var val=S.settings.cutoffTimes[i.toString()]||'';
+    return '<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid #f0f0ec;">'
+      +'<span class="dow-label" style="color:'+colors[i]+';font-weight:600;">'+d+'曜日</span>'
+      +'<input type="time" class="time-input" value="'+val+'" onchange="updateCutoff('+i+',this.value)">'
+      +'<span style="font-size:11px;color:#888;">までは前日分</span>'
+      +'</div>';
+  }).join('');
+  return '<div class="admin-section">'
+    +'<div class="admin-section-title">曜日別 締め時刻設定</div>'
+    +'<p style="font-size:12px;color:#888;margin-bottom:1rem;line-height:1.6;">設定時刻より前の入力は前日分として記録されます。<br>空欄にするとその曜日は繰り越しなし（当日扱い）。</p>'
+    +rows+'</div>';
 }
 
 function buildAdminCsv(){
@@ -900,7 +1028,7 @@ function buildAdminCsv(){
     <div style="background:#f5f5f0;border-radius:8px;padding:10px 12px;margin-bottom:0.75rem;">
       <div style="font-size:12px;color:#555;font-weight:600;margin-bottom:4px;">CSVの形式（1行目はヘッダー不要）</div>
       <code style="font-size:11px;color:#1a6644;line-height:1.8;">業務名,カテゴリ,頻度,ポイント<br>トイレ掃除,清掃,毎日,1<br>Aスタ掃除機,定期,週1回,2</code>
-      <div style="font-size:11px;color:#888;margin-top:6px;">頻度: 毎日 / 週1回 / 2週間に1回 / 月1回 / 都度</div>
+      <div style="font-size:11px;color:#888;margin-top:6px;">頻度: 毎日 / 週1回 / 2週間に1回 / 月1回 / 月2回(1日・15日) / 都度</div>
     </div>
     <div class="csv-drop" onclick="document.getElementById('csv-file').click()">
       <div style="font-size:14px;color:#1a6644;font-weight:700;margin-bottom:4px;">CSVファイルを選択してアップロード</div>
@@ -1060,7 +1188,7 @@ function importCsv(input){
   reader.onload=e=>{
     try{
       const lines=e.target.result.split(/\r?\n/).filter(l=>l.trim());
-      const validFreqs=['毎日','週1回','2週間に1回','月1回','都度'];
+      const validFreqs=['毎日','週1回','2週間に1回','月1回','月2回(1日・15日)','都度'];
       const newTasks=[];const errors=[];
       lines.forEach((line,idx)=>{
         const p=line.split(',').map(s=>s.trim().replace(/^"|"$/g,''));
@@ -1102,6 +1230,133 @@ function resetDefault(){
   if(!confirm(`業務リストを初期データ（${DEFAULT_TASKS.length}件）に戻しますか？\n現在のリストは上書きされます。`))return;
   S.tasks=[...DEFAULT_TASKS];save();renderAdmin();
   showToast(`初期データ（${DEFAULT_TASKS.length}件）に戻しました`);
+}
+
+// =========== EXPORT ===========
+function buildExportView(){
+  const now=new Date();
+  const curY=now.getFullYear();
+  const curM=now.getMonth()+1;
+  // Build last 12 months options
+  const months=[];
+  for(let i=0;i<12;i++){
+    let m=curM-i;let y=curY;
+    if(m<=0){m+=12;y--;}
+    months.push({y,m});
+  }
+  const selId=`exp-ym-sel`;
+  return`<div class="admin-section">
+    <div class="admin-section-title">月次レポート エクスポート</div>
+    <p style="font-size:12px;color:#888;margin-bottom:1rem;line-height:1.6;">対象月を選んでCSVダウンロード・印刷用PDFを出力できます。</p>
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:1.25rem;">
+      <span style="font-size:13px;font-weight:700;color:var(--navy);">対象月：</span>
+      <select id="${selId}" style="flex:1;padding:0.5rem 0.75rem;border:2px solid var(--navy-light);border-radius:8px;font-size:13px;font-family:inherit;background:#fff;color:var(--navy);">
+        ${months.map(({y,m})=>`<option value="${y}-${String(m).padStart(2,'0')}">${y}年${m}月</option>`).join('')}
+      </select>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:10px;">
+      <button class="btn btn-navy" style="width:100%;font-size:14px;padding:0.75rem;" onclick="downloadMonthCsv(document.getElementById('${selId}').value)">⬇ CSVダウンロード（実績ログ）</button>
+      <button class="btn" style="width:100%;font-size:14px;padding:0.75rem;background:var(--navy-light);border-color:var(--navy-light);color:var(--navy);" onclick="printMonthReport(document.getElementById('${selId}').value)">🖨 印刷用PDF（月次サマリー）</button>
+    </div>
+  </div>
+  <div id="exp-preview"></div>`;
+}
+
+function downloadMonthCsv(ym){
+  const entries=[];
+  for(const[date,dr]of Object.entries(S.records)){
+    if(!date.startsWith(ym))continue;
+    for(const[staff,sr]of Object.entries(dr)){
+      for(const[tid,rec]of Object.entries(sr)){
+        if(rec?.completed){
+          const task=S.tasks.find(t=>t.id===tid);
+          if(task)entries.push({date,staff,task,ts:rec.ts});
+        }
+      }
+    }
+  }
+  entries.sort((a,b)=>(a.date>b.date?1:a.date<b.date?-1:0));
+  if(!entries.length){alert(`${ym} の記録はありません`);return;}
+  const bom='\uFEFF';
+  const header='日付,スタッフ,業務名,カテゴリ,頻度,ポイント,完了時刻';
+  const rows=entries.map(({date,staff,task,ts})=>{
+    const tStr=ts?new Date(ts).toLocaleString('ja-JP'):'';
+    return[date,staff,`"${task.name}"`,task.category,task.frequency,task.points,`"${tStr}"`].join(',');
+  });
+  const csv=bom+header+'\r\n'+rows.join('\r\n');
+  const blob=new Blob([csv],{type:'text/csv;charset=utf-8;'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=url;a.download=`業務実績_${ym}.csv`;a.click();URL.revokeObjectURL(url);
+}
+
+function printMonthReport(ym){
+  const [y,m]=ym.split('-').map(Number);
+  // Collect data
+  const staffTotals={};
+  S.staff.forEach(s=>staffTotals[s]={pts:0,cnt:0});
+  const taskRows=[];
+  const dailyMap={};// date→{staff→pts}
+
+  for(const[date,dr]of Object.entries(S.records)){
+    if(!date.startsWith(ym))continue;
+    for(const[staff,sr]of Object.entries(dr)){
+      if(!staffTotals[staff])staffTotals[staff]={pts:0,cnt:0};
+      for(const[tid,rec]of Object.entries(sr)){
+        if(rec?.completed){
+          const task=S.tasks.find(t=>t.id===tid);
+          if(!task)continue;
+          staffTotals[staff].pts+=task.points;
+          staffTotals[staff].cnt++;
+          taskRows.push({date,staff,task,ts:rec.ts});
+          if(!dailyMap[date])dailyMap[date]={};
+          if(!dailyMap[date][staff])dailyMap[date][staff]=0;
+          dailyMap[date][staff]+=task.points;
+        }
+      }
+    }
+  }
+
+  const dates=Object.keys(dailyMap).sort();
+  const printWin=window.open('','_blank','width=900,height=700');
+  if(!printWin)return alert('ポップアップを許可してください');
+  printWin.document.write(`<!DOCTYPE html><html lang="ja"><head>
+  <meta charset="UTF-8"><title>業務月次レポート ${y}年${m}月</title>
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0;}
+    body{font-family:'Hiragino Sans','Meiryo',sans-serif;font-size:12px;color:#111;padding:20px;}
+    h1{font-size:18px;margin-bottom:4px;color:#0D3B6E;}
+    .sub{font-size:11px;color:#888;margin-bottom:20px;}
+    h2{font-size:13px;font-weight:700;margin:20px 0 8px;color:#0D3B6E;border-bottom:2px solid #0D3B6E;padding-bottom:4px;}
+    table{width:100%;border-collapse:collapse;font-size:11px;margin-bottom:16px;}
+    th{background:#0D3B6E;color:#fff;padding:6px 8px;text-align:left;}
+    td{padding:5px 8px;border-bottom:1px solid #ddd;}
+    tr:nth-child(even){background:#f5f8ff;}
+    .pts{text-align:right;font-weight:700;color:#0D3B6E;}
+    @media print{body{padding:0;}button{display:none!important;}}
+  </style></head><body>
+  <button onclick="window.print()" style="margin-bottom:16px;padding:8px 20px;background:#0D3B6E;color:#fff;border:none;border-radius:8px;font-size:13px;cursor:pointer;">🖨 印刷する</button>
+  <h1>業務月次レポート ${y}年${m}月</h1>
+  <div class="sub">わくわく学童保育 ／ 出力日時: ${new Date().toLocaleString('ja-JP')}</div>
+
+  <h2>スタッフ別集計</h2>
+  <table><tr><th>スタッフ</th><th>完了件数</th><th class="pts" style="text-align:right;">合計ポイント</th></tr>
+  ${S.staff.map(s=>`<tr><td>${s}</td><td>${staffTotals[s]?.cnt||0}件</td><td class="pts">${(staffTotals[s]?.pts||0).toFixed(1)}pt</td></tr>`).join('')}
+  </table>
+
+  <h2>日別スタッフポイント</h2>
+  <table>
+    <tr><th>日付</th>${S.staff.map(s=>`<th>${s}</th>`).join('')}</tr>
+    ${dates.map(d=>`<tr><td>${d.slice(5).replace('-','/')}</td>${S.staff.map(s=>`<td class="pts">${dailyMap[d]?.[s]?dailyMap[d][s].toFixed(1)+'pt':'—'}</td>`).join('')}</tr>`).join('')}
+  </table>
+
+  <h2>実績詳細ログ（${taskRows.length}件）</h2>
+  <table><tr><th>日付</th><th>スタッフ</th><th>業務名</th><th>カテゴリ</th><th>頻度</th><th class="pts" style="text-align:right;">pt</th></tr>
+  ${taskRows.sort((a,b)=>a.date>b.date?1:-1).map(({date,staff,task})=>`
+    <tr><td>${date.slice(5).replace('-','/')}</td><td>${staff}</td><td>${task.name}</td><td>${task.category}</td><td>${task.frequency}</td><td class="pts">${task.points}</td></tr>`).join('')}
+  </table>
+  </body></html>`);
+  printWin.document.close();
 }
 
 // =========== BOOT ===========
